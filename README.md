@@ -6,5 +6,5 @@
     width="100%"
   />
 </a>
-A lightweight, simple, real-time web tool to calculate dynamic highlights and shadows for anime hair palettes based on a base color selection. Built with pure HTML5 Canvas and CSS Glassmorphism.
+A lightweight, simple, real-time web tool to calculate dynamic highlights and shadows for anime hair palettes based on a base color selection. Built with CSS Glassmorphism. For a good UI experience. I recommend opening Desktop Sites in Chrome on Mobile.
 Just for fun or maybe it useful for Beginners:)))
