@@ -20,7 +20,7 @@
             margin: 0;
             padding: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            user-select: none; /* Prevents text selection while sliding */
+            user-select: none;
         }
 
         body {
@@ -63,6 +63,15 @@
         header {
             text-align: center;
             margin-bottom: 35px;
+        }
+
+        /* --- LOGO STYLE --- */
+        .project-logo {
+            max-width: 120px;
+            height: auto;
+            margin-bottom: 15px;
+            border-radius: 12px;
+            object-fit: contain;
         }
 
         header h1 {
@@ -114,13 +123,12 @@
             align-self: flex-start;
         }
 
-        /* --- Color Wheel Real-time Sliding Setup --- */
         .wheel-container {
             position: relative;
             width: 220px;
             height: 220px;
             margin: 10px 0;
-            touch-action: none; /* Prevents scrolling on mobile while sliding */
+            touch-action: none;
         }
 
         canvas {
@@ -144,7 +152,7 @@
             pointer-events: none;
             top: 50%;
             left: 50%;
-            will-change: top, left; /* Performance boost for smooth real-time rendering */
+            will-change: top, left;
         }
 
         .picker-wrapper {
@@ -158,7 +166,6 @@
             width: 100%;
         }
 
-        /* --- PERFECT 1:1 RATIO CSS CIRCLE MASK --- */
         .custom-color-circle {
             position: relative;
             width: 38px;
@@ -172,7 +179,6 @@
             overflow: hidden;
         }
 
-        /* Entirely hides native ugly color box but leaves touch hitbox fully transparent on top */
         .custom-color-circle input[type="color"] {
             position: absolute;
             top: 0;
@@ -194,7 +200,6 @@
             outline: none;
         }
 
-        /* Sliders */
         .slider-container {
             display: flex;
             flex-direction: column;
@@ -229,7 +234,6 @@
 
         input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
 
-        /* Preview Panel */
         .preview-panel {
             display: flex;
             flex-direction: column;
@@ -331,6 +335,8 @@
 
     <div class="container">
         <header>
+            <!-- Favicon -->
+            <img src="https://files.catbox.moe/mdy952.jpg" alt="Logo" class="project-logo" onerror="this.style.display='none'">
             <h1>Anime Hair Palette Generator</h1>
             <p>Slide smoothly on the wheel or fine-tune sliders for real-time calculation</p>
         </header>
@@ -346,7 +352,6 @@
                     </div>
 
                     <div class="picker-wrapper">
-                        <!-- Enhanced perfectly round mask -->
                         <div class="custom-color-circle" id="circlePreview">
                             <input type="color" id="baseColorPicker" value="#6366f1">
                         </div>
@@ -373,8 +378,7 @@
 
             <div class="preview-panel">
                 <div class="palette-display">
-                    <!-- Cards with click bounce but NO clipboard copy actions -->
-                    <div class="color-card" onclick="triggerCardVisual('highlightHex')">
+                    <div class="color-card" onclick="copyToClipboard('highlightHex')">
                         <div class="color-swatch" id="highlightSwatch"></div>
                         <div class="color-info">
                             <span class="color-role">Highlight (Tint)</span>
@@ -382,7 +386,7 @@
                         </div>
                     </div>
 
-                    <div class="color-card" onclick="triggerCardVisual('baseHex')">
+                    <div class="color-card" onclick="copyToClipboard('baseHex')">
                         <div class="color-swatch" id="baseSwatch"></div>
                         <div class="color-info">
                             <span class="color-role">Base Color</span>
@@ -390,7 +394,7 @@
                         </div>
                     </div>
 
-                    <div class="color-card" onclick="triggerCardVisual('shadowHex')">
+                    <div class="color-card" onclick="copyToClipboard('shadowHex')">
                         <div class="color-swatch" id="shadowSwatch"></div>
                         <div class="color-info">
                             <span class="color-role">Shadow (Shade)</span>
@@ -408,8 +412,7 @@
         </div>
     </div>
 
-    <!-- Toast message modified for interaction acknowledgement without copying -->
-    <div class="toast" id="toast">Color selected!</div>
+    <div class="toast" id="toast">Color copied to clipboard!</div>
 
     <script>
         const canvas = document.getElementById('colorWheel');
@@ -481,7 +484,6 @@
             const baseHex = baseColorPicker.value;
             baseHexInput.value = baseHex.toUpperCase();
             
-            // Updates the round mask container background color directly in real-time
             document.getElementById('circlePreview').style.backgroundColor = baseHex;
             
             const hsl = hexToHsl(baseHex);
@@ -557,12 +559,10 @@
             calculatePalette();
         }
 
-        // Desktop Mouse Listeners
         wheelContainer.addEventListener('mousedown', (e) => { isSliding = true; handleWheelColor(e); });
         window.addEventListener('mousemove', (e) => { if (isSliding) handleWheelColor(e); });
         window.addEventListener('mouseup', () => { isSliding = false; });
 
-        // Mobile Touch Listeners
         wheelContainer.addEventListener('touchstart', (e) => { isSliding = true; handleWheelColor(e); }, { passive: true });
         window.addEventListener('touchmove', (e) => { if (isSliding) handleWheelColor(e); }, { passive: true });
         window.addEventListener('touchend', () => { isSliding = false; });
@@ -580,13 +580,39 @@
             }
         });
 
-        // --- HITBOX ONLY (NO CLIPBOARD COPIES) ---
-        window.triggerCardVisual = function(id) {
+        // --- FULLY FIXED HTTPS CLIPBOARD METHOD ---
+        window.copyToClipboard = function(id) {
             const text = document.getElementById(id).innerText;
+            
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text)
+                    .then(() => showToast(`Copied: ${text}`))
+                    .catch(err => useFallbackCopy(text));
+            } else {
+                useFallbackCopy(text);
+            }
+        }
+
+        function useFallbackCopy(text) {
+            const dummy = document.createElement('textarea');
+            dummy.value = text;
+            dummy.style.position = 'fixed'; // Avoid scrolling
+            document.body.appendChild(dummy);
+            dummy.select();
+            try {
+                document.execCommand('copy');
+                showToast(`Copied: ${text}`);
+            } catch (err) {
+                showToast('Failed to copy color');
+            }
+            document.body.removeChild(dummy);
+        }
+
+        function showToast(message) {
             const toast = document.getElementById('toast');
-            toast.innerText = `Selected: ${text}`;
+            toast.innerText = message;
             toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 1500);
+            setTimeout(() => toast.classList.remove('show'), 2000);
         }
 
         // Init Setup
